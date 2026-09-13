@@ -56,4 +56,9 @@ if (isMainModule) {
         });
 }
 
-export default app;
+export default async function handler(req, res) {
+    if (!isMainModule) {
+        await connectDB();
+    }
+    return app(req, res);
+}
