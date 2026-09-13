@@ -65,22 +65,22 @@ router.post("/:conversationId/read", async (req, res) => {
     }
 
     try {
-        const conversation = await Conversation.findOneAndUpdate(
-            { _id: req.params.conversationId, participants: req.user._id },
-            {
-                $addToSet: {
-                    "messages.$[message].readBy": req.user._id,
-                },
-            },
-            {
-                arrayFilters: {
-                    "message.sender": { $ne: req.user._id },
-                    "message.readBy": { $ne: req.user._id },
-                },
-                new: true,
-            },
-        ).select("_id");
+        const conversation = await Conversation.findOne({
+            _id: req.params.conversationId,
+            participants: req.user._id,
+        });
         if (!conversation) return res.status(404).json({ message: "Conversation not found." });
+
+        let changed = false;
+        conversation.messages.forEach((message) => {
+            const isOtherUserMessage = String(message.sender) !== String(req.user._id);
+            const alreadyRead = message.readBy.some((userId) => String(userId) === String(req.user._id));
+            if (isOtherUserMessage && !alreadyRead) {
+                message.readBy.push(req.user._id);
+                changed = true;
+            }
+        });
+        if (changed) await conversation.save();
         return res.sendStatus(204);
     } catch {
         return res.status(500).json({ message: "Unable to mark messages as read." });
