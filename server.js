@@ -57,8 +57,17 @@ if (isMainModule) {
 }
 
 export default async function handler(req, res) {
-    if (!isMainModule) {
-        await connectDB();
+    try {
+        if (!isMainModule) {
+            await connectDB();
+        }
+        return app(req, res);
+    } catch (error) {
+        console.error(`MongoDB Connection Error: ${error.message}`);
+        if (!res.headersSent) {
+            return res.status(503).json({
+                message: "Database unavailable. Check MongoDB Atlas network access and credentials.",
+            });
+        }
     }
-    return app(req, res);
 }
