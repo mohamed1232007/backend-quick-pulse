@@ -10,7 +10,8 @@ const router = Router();
 const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.COOKIE_SAMESITE || "lax",
+    sameSite: process.env.COOKIE_SAMESITE
+        || (process.env.NODE_ENV === "production" ? "none" : "lax"),
     path: "/",
     maxAge: 15 * 60 * 1000,
 };
@@ -35,7 +36,10 @@ function authResponse(res, user, status = 200) {
             path: "/",
             maxAge: cookieOptions.maxAge,
         })
-        .json({ user: { id: user.id, name: user.name, username: user.username, email: user.email } });
+        .json({
+            user: { id: user.id, name: user.name, username: user.username, email: user.email },
+            csrfToken,
+        });
 }
 
 router.post("/register", async (req, res) => {
